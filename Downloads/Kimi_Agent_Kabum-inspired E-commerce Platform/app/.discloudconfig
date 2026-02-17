@@ -1,0 +1,6 @@
+ID=nexus-store.discloud.app
+TYPE=site
+MAIN=server.js
+NAME=Nexus Store
+RAM=256
+START=node server.js
