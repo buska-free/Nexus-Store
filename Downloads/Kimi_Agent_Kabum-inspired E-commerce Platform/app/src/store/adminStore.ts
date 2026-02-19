@@ -25,14 +25,46 @@ interface AdminStore {
   removeDiscount: (productId: string) => void;
   getProductPrice: (productId: string) => { originalPrice: number; currentPrice: number; discount: number; discountType: string };
   resetPrices: () => void;
+  
+  // Migration
+  migrateFromLegacy: () => number;
 }
 
 export const useAdminStore = create<AdminStore>((set, get) => {
   // Carregar dados do localStorage ao inicializar
-  const savedOverrides = localStorage.getItem('productOverrides');
+  let savedOverrides = localStorage.getItem('productOverrides');
   const initialOverrides = new Map<string, ProductOverride>();
   
-  if (savedOverrides) {
+  // Se não houver dados salvos, fazer migração do sistema antigo
+  if (!savedOverrides) {
+    const migratedOverrides: ProductOverride[] = [];
+    
+    defaultProducts.forEach((product) => {
+      // Se o produto tem originalPrice diferente do price, significa que tinha desconto
+      if (product.originalPrice && product.originalPrice !== product.price) {
+        const discount = product.originalPrice - product.price;
+        const discountPercentage = Math.round((discount / product.originalPrice) * 100 * 100) / 100;
+        
+        migratedOverrides.push({
+          productId: product.id,
+          originalPrice: product.originalPrice,
+          currentPrice: product.price,
+          discount: discountPercentage,
+          discountType: 'percentage',
+          isActive: true,
+        });
+      }
+    });
+    
+    // Salvar migração se houver dados
+    if (migratedOverrides.length > 0) {
+      localStorage.setItem('productOverrides', JSON.stringify(migratedOverrides));
+      migratedOverrides.forEach((override) => {
+        initialOverrides.set(override.productId, override);
+      });
+      console.log(`✅ Migração concluída: ${migratedOverrides.length} produtos com desconto importados do sistema antigo`);
+    }
+  } else {
     try {
       const parsed = JSON.parse(savedOverrides);
       parsed.forEach((override: ProductOverride) => {
@@ -168,6 +200,37 @@ export const useAdminStore = create<AdminStore>((set, get) => {
     resetPrices: () => {
       set({ productOverrides: new Map() });
       localStorage.removeItem('productOverrides');
+    },
+
+    migrateFromLegacy: () => {
+      const migratedOverrides: ProductOverride[] = [];
+      
+      defaultProducts.forEach((product) => {
+        // Se o produto tem originalPrice diferente do price, significa que tinha desconto
+        if (product.originalPrice && product.originalPrice !== product.price) {
+          const discount = product.originalPrice - product.price;
+          const discountPercentage = Math.round((discount / product.originalPrice) * 100 * 100) / 100;
+          
+          migratedOverrides.push({
+            productId: product.id,
+            originalPrice: product.originalPrice,
+            currentPrice: product.price,
+            discount: discountPercentage,
+            discountType: 'percentage',
+            isActive: true,
+          });
+        }
+      });
+      
+      const newOverrides = new Map<string, ProductOverride>();
+      migratedOverrides.forEach((override) => {
+        newOverrides.set(override.productId, override);
+      });
+      
+      set({ productOverrides: newOverrides });
+      localStorage.setItem('productOverrides', JSON.stringify(migratedOverrides));
+      
+      return migratedOverrides.length;
     },
   };
 });

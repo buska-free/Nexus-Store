@@ -17,7 +17,7 @@ export function AdminPage() {
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ price: 0, discount: 0, discountType: 'percentage' as 'percentage' | 'fixed' });
   
-  const { isAuthenticated, login, logout, applyDiscount, removeDiscount, getProductPrice, resetPrices, productOverrides } = useAdminStore();
+  const { isAuthenticated, login, logout, applyDiscount, removeDiscount, getProductPrice, resetPrices, productOverrides, migrateFromLegacy } = useAdminStore();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +62,15 @@ export function AdminPage() {
     if (confirm('Tem certeza? Isso removerá todos os descontos e alterações de preço.')) {
       resetPrices();
       toast.success('Todos os preços foram resetados!');
+    }
+  };
+
+  const handleMigrate = () => {
+    const count = migrateFromLegacy();
+    if (count > 0) {
+      toast.success(`✅ Migração concluída! ${count} produtos importados do sistema antigo.`);
+    } else {
+      toast.info('Nenhum produto com desconto para migrar.');
     }
   };
 
@@ -141,6 +150,13 @@ export function AdminPage() {
             <p className="text-gray-400">Gerencie preços e descontos dos produtos</p>
           </div>
           <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={handleMigrate}
+              className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+            >
+              🔄 Importar Sistema Antigo
+            </Button>
             <Button
               variant="outline"
               onClick={handleResetAll}
