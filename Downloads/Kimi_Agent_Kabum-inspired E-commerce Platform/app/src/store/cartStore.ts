@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CartItem, Product } from '@/types';
+import { useAdminStore } from './adminStore';
 
 interface CartStore {
   items: CartItem[];
@@ -104,28 +105,31 @@ export const useCartStore = create<CartStore>()(
       },
 
       getSubtotal: () => {
-        return get().items.reduce(
-          (total, item) => total + item.product.price * item.quantity,
-          0
-        );
+        const adminStore = useAdminStore.getState();
+        return get().items.reduce((total, item) => {
+          const pricing = adminStore.getProductPrice(item.product.id);
+          return total + pricing.currentPrice * item.quantity;
+        }, 0);
       },
 
       getDiscountAmount: () => {
         const { discount, items } = get();
         if (discount === 0) return 0;
-        const subtotal = items.reduce(
-          (total, item) => total + item.product.price * item.quantity,
-          0
-        );
+        const adminStore = useAdminStore.getState();
+        const subtotal = items.reduce((total, item) => {
+          const pricing = adminStore.getProductPrice(item.product.id);
+          return total + pricing.currentPrice * item.quantity;
+        }, 0);
         return subtotal * discount;
       },
 
       getTotal: () => {
         const { items, discount } = get();
-        const subtotal = items.reduce(
-          (total, item) => total + item.product.price * item.quantity,
-          0
-        );
+        const adminStore = useAdminStore.getState();
+        const subtotal = items.reduce((total, item) => {
+          const pricing = adminStore.getProductPrice(item.product.id);
+          return total + pricing.currentPrice * item.quantity;
+        }, 0);
         return subtotal * (1 - discount);
       },
 

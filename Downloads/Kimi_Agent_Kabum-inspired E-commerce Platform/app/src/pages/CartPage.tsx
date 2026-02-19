@@ -15,6 +15,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { useAdminStore } from '@/store/adminStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -24,6 +25,7 @@ export function CartPage() {
   const [couponCode, setCouponCode] = useState('');
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   
+  const getProductPrice = useAdminStore((state) => state.getProductPrice);
   const {
     items,
     couponCode: appliedCoupon,
@@ -219,7 +221,7 @@ export function CartPage() {
                       <div className="sm:col-span-2 flex items-center justify-between sm:justify-center">
                         <span className="sm:hidden text-gray-500">Preço:</span>
                         <span className="text-gray-400 text-sm">
-                          {formatPrice(item.product.price)}
+                          {formatPrice(getProductPrice(item.product.id).currentPrice)}
                         </span>
                       </div>
 
@@ -228,7 +230,7 @@ export function CartPage() {
                         <span className="sm:hidden text-gray-500">Total:</span>
                         <div className="flex items-center gap-4">
                           <span className="text-white font-semibold">
-                            {formatPrice(item.product.price * item.quantity)}
+                            {formatPrice(getProductPrice(item.product.id).currentPrice * item.quantity)}
                           </span>
                           <button
                             onClick={() => removeItem(item.product.id, item.variant)}

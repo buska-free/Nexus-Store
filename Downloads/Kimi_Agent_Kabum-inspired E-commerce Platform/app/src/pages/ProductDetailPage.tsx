@@ -17,6 +17,7 @@ import {
 import { getProductById, getRelatedProducts } from '@/data/products';
 import { useCartStore } from '@/store/cartStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
+import { useAdminStore } from '@/store/adminStore';
 import { ProductCard } from '@/components/product/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,6 +32,7 @@ export function ProductDetailPage() {
   const [selectedVariant, setSelectedVariant] = useState<string>('');
   
   const addItem = useCartStore((state) => state.addItem);
+  const getProductPrice = useAdminStore((state) => state.getProductPrice);
   const relatedProducts = product ? getRelatedProducts(product.id, 4) : [];
   const favorites = useFavoritesStore((state) => state.items);
   const toggleFavorite = useFavoritesStore((state) => state.toggle);
@@ -254,25 +256,38 @@ export function ProductDetailPage() {
 
             {/* Preço */}
             <div className="bg-[#2C2C2C] rounded-xl p-6">
-              {product.originalPrice && (
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-gray-500 line-through">
-                    {formatPrice(product.originalPrice)}
-                  </span>
-                  <span className="bg-green-500/20 text-green-400 text-sm px-2 py-0.5 rounded">
-                    -{calculateDiscount()}%
-                  </span>
-                </div>
-              )}
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-bold text-[#FF6600]">
-                  {formatPrice(product.price)}
-                </span>
-                <span className="text-gray-500">à vista</span>
-              </div>
-              <p className="text-gray-400 text-sm mt-2">
-                ou em até 12x de {formatPrice(product.price / 12)} sem juros
-              </p>
+              {product && (() => {
+                const pricing = getProductPrice(product.id);
+                const discountPercent = pricing.discount && pricing.discountType === '%' 
+                  ? Math.round(pricing.discount) 
+                  : pricing.originalPrice 
+                  ? Math.round(((pricing.originalPrice - pricing.currentPrice) / pricing.originalPrice) * 100)
+                  : 0;
+                
+                return (
+                  <>
+                    {pricing.originalPrice && pricing.originalPrice !== pricing.currentPrice && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-gray-500 line-through">
+                          {formatPrice(pricing.originalPrice)}
+                        </span>
+                        <span className="bg-green-500/20 text-green-400 text-sm px-2 py-0.5 rounded">
+                          -{discountPercent}%
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl sm:text-4xl font-bold text-[#FF6600]">
+                        {formatPrice(pricing.currentPrice)}
+                      </span>
+                      <span className="text-gray-500">à vista</span>
+                    </div>
+                    <p className="text-gray-400 text-sm mt-2">
+                      ou em até 12x de {formatPrice(pricing.currentPrice / 12)} sem juros
+                    </p>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Variações */}

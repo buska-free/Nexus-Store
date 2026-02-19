@@ -14,6 +14,7 @@ import {
   Package,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { useAdminStore } from '@/store/adminStore';
 import { useUserStore } from '@/store/userStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ export function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const { items, getSubtotal, getDiscountAmount, getTotal, clearCart } = useCartStore();
+  const getProductPrice = useAdminStore((state) => state.getProductPrice);
   const { user } = useUserStore();
 
   // Form states
@@ -449,24 +451,27 @@ export function CheckoutPage() {
             <div className="bg-[#1A1A1A] rounded-lg p-4">
               <h3 className="text-white font-semibold mb-4">Produtos</h3>
               <div className="space-y-3">
-                {items.map((item) => (
-                  <div key={`${item.product.id}-${item.variant}`} className="flex gap-4">
-                    <img
-                      src={item.product.image}
-                      alt={item.product.name}
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <p className="text-white text-sm">{item.product.name}</p>
-                      <p className="text-gray-400 text-xs">
-                        {item.quantity}x {formatPrice(item.product.price)}
+                {items.map((item) => {
+                  const pricing = getProductPrice(item.product.id);
+                  return (
+                    <div key={`${item.product.id}-${item.variant}`} className="flex gap-4">
+                      <img
+                        src={item.product.image}
+                        alt={item.product.name}
+                        className="w-16 h-16 object-cover rounded-lg"
+                      />
+                      <div className="flex-1">
+                        <p className="text-white text-sm">{item.product.name}</p>
+                        <p className="text-gray-400 text-xs">
+                          {item.quantity}x {formatPrice(pricing.currentPrice)}
+                        </p>
+                      </div>
+                      <p className="text-white font-medium">
+                        {formatPrice(pricing.currentPrice * item.quantity)}
                       </p>
                     </div>
-                    <p className="text-white font-medium">
-                      {formatPrice(item.product.price * item.quantity)}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
