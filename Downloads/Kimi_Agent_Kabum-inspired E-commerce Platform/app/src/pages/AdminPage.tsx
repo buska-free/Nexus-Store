@@ -373,15 +373,28 @@ export function AdminPage() {
                                       Remover Desconto
                                     </Button>
                                   )}
-                                  <Button
-                                    onClick={() => {
-                                      handleApplyDiscount(product.id);
-                                      setEditingProductId(null);
-                                    }}
-                                    className="flex-1 bg-[#FF6600] hover:bg-[#E55A00]"
-                                  >
-                                    Aplicar Desconto
-                                  </Button>
+                                  <div className="flex gap-2 w-full">
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => {
+                                        updateOriginalPrice(product.id, editData.originalPrice);
+                                        toast.success('Preço original salvo');
+                                      }}
+                                      className="text-white border-[#4A4A4A] px-3 py-2"
+                                    >
+                                      Salvar Preço
+                                    </Button>
+
+                                    <Button
+                                      onClick={() => {
+                                        handleApplyDiscount(product.id);
+                                        setEditingProductId(null);
+                                      }}
+                                      className="flex-1 bg-[#FF6600] hover:bg-[#E55A00]"
+                                    >
+                                      Aplicar Desconto
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             </DialogContent>
