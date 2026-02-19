@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Check } from 'lucide-react';
 import type { Product } from '@/types';
 import { useCartStore } from '@/store/cartStore';
+import { useAdminStore } from '@/store/adminStore';
 import { toast } from 'sonner';
 import { useFavoritesStore } from '@/store/favoritesStore';
 
@@ -18,6 +19,9 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const toggleFavorite = useFavoritesStore((state) => state.toggle);
   const isLiked = favorites.includes(product.id);
   const addItem = useCartStore((state) => state.addItem);
+  const getProductPrice = useAdminStore((state) => state.getProductPrice);
+  
+  const pricing = getProductPrice(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -166,18 +170,18 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
             {/* Preço */}
             <div className="mt-auto">
-              {product.originalPrice && (
+              {pricing.originalPrice && pricing.originalPrice !== pricing.currentPrice && (
                 <p className="text-gray-500 text-xs line-through">
-                  {formatPrice(product.originalPrice)}
+                  {formatPrice(pricing.originalPrice)}
                 </p>
               )}
               <p className="text-[#FF6600] font-bold text-lg">
-                {formatPrice(product.price)}
+                {formatPrice(pricing.currentPrice)}
               </p>
               
-              {product.originalPrice && (
+              {pricing.originalPrice && pricing.originalPrice !== pricing.currentPrice && (
                 <p className="text-green-400 text-xs mt-1">
-                  Economize {formatPrice(product.originalPrice - product.price)}
+                  Economize {formatPrice(pricing.originalPrice - pricing.currentPrice)}
                 </p>
               )}
             </div>

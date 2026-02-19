@@ -1,0 +1,173 @@
+import { create } from 'zustand';
+import { products as defaultProducts } from '@/data/products';
+
+export interface ProductOverride {
+  productId: string;
+  originalPrice: number;
+  currentPrice: number;
+  discount: number; // percentual ou valor
+  discountType: 'percentage' | 'fixed'; // tipo de desconto
+  isActive: boolean;
+}
+
+interface AdminStore {
+  isAuthenticated: boolean;
+  adminPassword: string;
+  productOverrides: Map<string, ProductOverride>;
+  
+  // Auth
+  login: (password: string) => boolean;
+  logout: () => void;
+  
+  // Product Management
+  updateProductPrice: (productId: string, newPrice: number) => void;
+  applyDiscount: (productId: string, discount: number, type: 'percentage' | 'fixed') => void;
+  removeDiscount: (productId: string) => void;
+  getProductPrice: (productId: string) => { originalPrice: number; currentPrice: number; discount: number; discountType: string };
+  resetPrices: () => void;
+}
+
+export const useAdminStore = create<AdminStore>((set, get) => {
+  // Carregar dados do localStorage ao inicializar
+  const savedOverrides = localStorage.getItem('productOverrides');
+  const initialOverrides = new Map<string, ProductOverride>();
+  
+  if (savedOverrides) {
+    try {
+      const parsed = JSON.parse(savedOverrides);
+      parsed.forEach((override: ProductOverride) => {
+        initialOverrides.set(override.productId, override);
+      });
+    } catch (e) {
+      console.error('Erro ao carregar overrides:', e);
+    }
+  }
+
+  return {
+    isAuthenticated: false,
+    adminPassword: 'admin123', // Senha padrão (em produção, seria mais seguro)
+    productOverrides: initialOverrides,
+
+    login: (password: string) => {
+      const store = get();
+      if (password === store.adminPassword) {
+        set({ isAuthenticated: true });
+        return true;
+      }
+      return false;
+    },
+
+    logout: () => {
+      set({ isAuthenticated: false });
+    },
+
+    updateProductPrice: (productId: string, newPrice: number) => {
+      const store = get();
+      const product = defaultProducts.find(p => p.id === productId);
+      
+      if (!product) return;
+
+      const override = store.productOverrides.get(productId) || {
+        productId,
+        originalPrice: product.price,
+        currentPrice: product.price,
+        discount: 0,
+        discountType: 'percentage',
+        isActive: true,
+      };
+
+      override.currentPrice = newPrice;
+      override.discount = 0; // Limpar desconto ao alterar preço diretamente
+      override.isActive = true;
+
+      const newOverrides = new Map(store.productOverrides);
+      newOverrides.set(productId, override);
+      set({ productOverrides: newOverrides });
+      
+      // Persistir no localStorage
+      localStorage.setItem('productOverrides', JSON.stringify(Array.from(newOverrides.values())));
+    },
+
+    applyDiscount: (productId: string, discount: number, type: 'percentage' | 'fixed') => {
+      const store = get();
+      const product = defaultProducts.find(p => p.id === productId);
+      
+      if (!product) return;
+
+      const override = store.productOverrides.get(productId) || {
+        productId,
+        originalPrice: product.originalPrice || product.price,
+        currentPrice: product.price,
+        discount: 0,
+        discountType: 'percentage',
+        isActive: true,
+      };
+
+      override.discount = discount;
+      override.discountType = type;
+      override.isActive = true;
+
+      // Calcular preço com desconto
+      const basePrice = override.originalPrice;
+      if (type === 'percentage') {
+        override.currentPrice = basePrice * (1 - discount / 100);
+      } else {
+        override.currentPrice = Math.max(0, basePrice - discount);
+      }
+
+      const newOverrides = new Map(store.productOverrides);
+      newOverrides.set(productId, override);
+      set({ productOverrides: newOverrides });
+      
+      // Persistir no localStorage
+      localStorage.setItem('productOverrides', JSON.stringify(Array.from(newOverrides.values())));
+    },
+
+    removeDiscount: (productId: string) => {
+      const store = get();
+      const product = defaultProducts.find(p => p.id === productId);
+      
+      if (!product) return;
+
+      const override = store.productOverrides.get(productId);
+      if (override) {
+        override.discount = 0;
+        override.currentPrice = override.originalPrice;
+        override.isActive = false;
+        
+        const newOverrides = new Map(store.productOverrides);
+        newOverrides.set(productId, override);
+        set({ productOverrides: newOverrides });
+        
+        localStorage.setItem('productOverrides', JSON.stringify(Array.from(newOverrides.values())));
+      }
+    },
+
+    getProductPrice: (productId: string) => {
+      const store = get();
+      const product = defaultProducts.find(p => p.id === productId);
+      const override = store.productOverrides.get(productId);
+
+      if (override && override.isActive) {
+        return {
+          originalPrice: override.originalPrice,
+          currentPrice: override.currentPrice,
+          discount: override.discount,
+          discountType: override.discountType,
+        };
+      }
+
+      return {
+        originalPrice: product?.originalPrice || product?.price || 0,
+        currentPrice: product?.price || 0,
+        discount: 0,
+        discountType: 'percentage',
+      };
+    },
+
+    resetPrices: () => {
+      set({ productOverrides: new Map() });
+      localStorage.removeItem('productOverrides');
+    },
+  };
+});

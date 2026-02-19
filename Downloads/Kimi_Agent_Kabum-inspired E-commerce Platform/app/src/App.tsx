@@ -15,6 +15,7 @@ import { FavoritesPage } from '@/pages/FavoritesPage';
 import { SentEmailsPage } from '@/pages/SentEmailsPage';
 import { SentMessagesPage } from '@/pages/SentMessagesPage';
 import { VerifyCodePage } from '@/pages/VerifyCodePage';
+import { AdminPage } from '@/pages/AdminPage';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           {/* Rotas sem Header/Footer */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/cadastro" element={<RegisterPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           
           {/* Rotas com Header/Footer */}
           <Route
