@@ -126,21 +126,22 @@ export const useAdminStore = create<AdminStore>((set, get) => {
       
       if (!product) return;
 
-      const override = store.productOverrides.get(productId) || {
+      const existingOverride = store.productOverrides.get(productId);
+      
+      // Se já existe uma sobrescrita, usar o originalPrice dela como base
+      // Se não existe, usar o price atual do produto como originalPrice
+      const basePrice = existingOverride?.originalPrice || product.price;
+
+      const override: ProductOverride = {
         productId,
-        originalPrice: product.originalPrice || product.price,
-        currentPrice: product.price,
-        discount: 0,
-        discountType: 'percentage',
+        originalPrice: basePrice,
+        currentPrice: 0, // será calculado abaixo
+        discount: discount,
+        discountType: type,
         isActive: true,
       };
 
-      override.discount = discount;
-      override.discountType = type;
-      override.isActive = true;
-
       // Calcular preço com desconto
-      const basePrice = override.originalPrice;
       if (type === 'percentage') {
         override.currentPrice = basePrice * (1 - discount / 100);
       } else {
