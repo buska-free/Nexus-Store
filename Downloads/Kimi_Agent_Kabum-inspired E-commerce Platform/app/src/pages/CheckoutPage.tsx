@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -48,7 +48,6 @@ export function CheckoutPage() {
     city: user?.addresses?.[0]?.city || '',
     state: user?.addresses?.[0]?.state || '',
   });
-  const [isCepLoading, setIsCepLoading] = useState(false);
 
   const [shippingMethod, setShippingMethod] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
@@ -159,7 +158,6 @@ export function CheckoutPage() {
     const cep = sanitizeCep(rawCep);
     if (!cep || cep.length !== 8) return;
     try {
-      setIsCepLoading(true);
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       if (!res.ok) throw new Error('Erro ao consultar CEP');
       const data = await res.json();
@@ -177,8 +175,6 @@ export function CheckoutPage() {
       toast.success('Endereço preenchido automaticamente');
     } catch (err) {
       toast.error('Não foi possível buscar o CEP');
-    } finally {
-      setIsCepLoading(false);
     }
   };
 
