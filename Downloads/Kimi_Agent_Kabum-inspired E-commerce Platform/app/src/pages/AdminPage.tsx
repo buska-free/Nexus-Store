@@ -15,9 +15,9 @@ export function AdminPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [editData, setEditData] = useState({ price: 0, discount: 0, discountType: 'percentage' as 'percentage' | 'fixed' });
+  const [editData, setEditData] = useState({ price: 0, originalPrice: 0, discount: 0, discountType: 'percentage' as 'percentage' | 'fixed' });
   
-  const { isAuthenticated, login, logout, applyDiscount, removeDiscount, getProductPrice, resetPrices, productOverrides, migrateFromLegacy } = useAdminStore();
+  const { isAuthenticated, login, logout, applyDiscount, removeDiscount, getProductPrice, updateOriginalPrice, resetPrices, productOverrides, migrateFromLegacy } = useAdminStore();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,10 +47,16 @@ export function AdminPage() {
       return;
     }
 
+    // Se o usuário alterou o preço original no diálogo, atualizar antes de aplicar o desconto
+    const currentPricing = getProductPrice(productId);
+    if (editData.originalPrice !== undefined && editData.originalPrice !== currentPricing.originalPrice) {
+      updateOriginalPrice(productId, editData.originalPrice);
+    }
+
     applyDiscount(productId, editData.discount, editData.discountType);
     toast.success(`Desconto aplicado: ${editData.discount}${editData.discountType === 'percentage' ? '%' : 'R$'}`);
     setEditingProductId(null);
-    setEditData({ price: 0, discount: 0, discountType: 'percentage' });
+    setEditData({ price: 0, originalPrice: 0, discount: 0, discountType: 'percentage' });
   };
 
   const handleRemoveDiscount = (productId: string) => {
@@ -277,7 +283,7 @@ export function AdminPage() {
                                 variant="outline"
                                 onClick={() => {
                                   setEditingProductId(product.id);
-                                  setEditData({ price: pricing.currentPrice, discount: pricing.discount, discountType: pricing.discountType as 'percentage' | 'fixed' });
+                                  setEditData({ price: pricing.currentPrice, originalPrice: pricing.originalPrice, discount: pricing.discount, discountType: pricing.discountType as 'percentage' | 'fixed' });
                                 }}
                                 className="border-[#4A4A4A] text-[#FF6600] hover:bg-[#FF6600]/10"
                               >
@@ -327,18 +333,27 @@ export function AdminPage() {
                                 </div>
 
                                 <div className="bg-[#1A1A1A] rounded p-3 border border-[#4A4A4A]">
-                                  <p className="text-gray-400 text-sm mb-1">Preço Original: {formatPrice(pricing.originalPrice)}</p>
+                                  <Label className="text-white mb-2 block">Preço Original (R$)</Label>
+                                  <Input
+                                    type="number"
+                                    value={editData.originalPrice}
+                                    onChange={(e) => setEditData({ ...editData, originalPrice: parseFloat(e.target.value) || 0 })}
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    className="bg-[#1A1A1A] border-[#4A4A4A] text-white mb-3"
+                                  />
+
                                   <p className="text-[#FF6600] text-lg font-bold">
                                     Preço com Desconto: {formatPrice(
                                       editData.discountType === 'percentage'
-                                        ? pricing.originalPrice * (1 - editData.discount / 100)
-                                        : Math.max(0, pricing.originalPrice - editData.discount)
+                                        ? editData.originalPrice * (1 - editData.discount / 100)
+                                        : Math.max(0, editData.originalPrice - editData.discount)
                                     )}
                                   </p>
                                   <p className="text-green-400 text-sm mt-2">
                                     Economia: {formatPrice(
                                       editData.discountType === 'percentage'
-                                        ? pricing.originalPrice * (editData.discount / 100)
+                                        ? editData.originalPrice * (editData.discount / 100)
                                         : editData.discount
                                     )}
                                   </p>

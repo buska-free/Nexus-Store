@@ -21,6 +21,7 @@ interface AdminStore {
   
   // Product Management
   updateProductPrice: (productId: string, newPrice: number) => void;
+  updateOriginalPrice: (productId: string, newOriginalPrice: number) => void;
   applyDiscount: (productId: string, discount: number, type: 'percentage' | 'fixed') => void;
   removeDiscount: (productId: string) => void;
   getProductPrice: (productId: string) => { originalPrice: number; currentPrice: number; discount: number; discountType: string };
@@ -153,6 +154,37 @@ export const useAdminStore = create<AdminStore>((set, get) => {
       set({ productOverrides: newOverrides });
       
       // Persistir no localStorage
+      localStorage.setItem('productOverrides', JSON.stringify(Array.from(newOverrides.values())));
+    },
+
+    updateOriginalPrice: (productId: string, newOriginalPrice: number) => {
+      const store = get();
+      const product = defaultProducts.find(p => p.id === productId);
+      if (!product) return;
+
+      const override = store.productOverrides.get(productId) || {
+        productId,
+        originalPrice: product.price,
+        currentPrice: product.price,
+        discount: 0,
+        discountType: 'percentage',
+        isActive: true,
+      };
+
+      override.originalPrice = newOriginalPrice;
+
+      // Recalcular currentPrice se houver desconto ativo
+      if (override.discount && override.discount > 0) {
+        if (override.discountType === 'percentage') {
+          override.currentPrice = override.originalPrice * (1 - override.discount / 100);
+        } else {
+          override.currentPrice = Math.max(0, override.originalPrice - override.discount);
+        }
+      }
+
+      const newOverrides = new Map(store.productOverrides);
+      newOverrides.set(productId, override);
+      set({ productOverrides: newOverrides });
       localStorage.setItem('productOverrides', JSON.stringify(Array.from(newOverrides.values())));
     },
 

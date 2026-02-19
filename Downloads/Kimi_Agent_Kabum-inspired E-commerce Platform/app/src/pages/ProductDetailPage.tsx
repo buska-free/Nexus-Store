@@ -90,8 +90,9 @@ export function ProductDetailPage() {
   };
 
   const calculateDiscount = () => {
-    if (product.originalPrice) {
-      return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+    const pricing = getProductPrice(product.id);
+    if (pricing.originalPrice && pricing.originalPrice !== pricing.currentPrice) {
+      return Math.round(((pricing.originalPrice - pricing.currentPrice) / pricing.originalPrice) * 100);
     }
     return 0;
   };
